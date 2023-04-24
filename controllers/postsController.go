@@ -45,3 +45,20 @@ func PostsIndex(c *gin.Context) {
 		"post": posts,
 	})
 }
+
+func PostsShow(c *gin.Context) {
+	//从url中获取id
+	id := c.Param("id")
+
+	//创建post结构体
+	var post models.Post
+	//DB.First(&post, id)是用于检索与给定id相符的第一个记录，并将结果存储在post变量中。
+	//它接受两个参数：第一个参数是指向变量的指针，第二个参数是要检索的记录的id
+	//如果找到记录，则将其读入post中，并返回nil作为错误；
+	//如果未找到记录，则将post设置为默认值（通常为0或nil），并返回ErrRecordNotFound作为错误。
+	initializers.DB.First(&post, id)
+
+	c.JSON(200, gin.H{
+		"posts": post,
+	})
+}
