@@ -13,7 +13,7 @@ func init() {
 
 func main() {
 	//Gorm语法
-	err := initializers.DB.AutoMigrate(&models.Post{})
+	err := initializers.DB.AutoMigrate(&models.User{})
 	if err != nil {
 		log.Fatal("failed migrate database")
 	}
