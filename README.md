@@ -15,7 +15,7 @@ $ go env -w GOPROXY = https: //goproxy.cn,direct
 网址：https: //github.com/githubnemo/CompileDaemon
 获取命令：go get github.com/githubnemo/CompileDaemon
 安装命令：go install github.com/githubnemo/CompileDaemon
-运行命令：CompileDaemon -command = "./go-curd" （./go -curd是项目目录）
+运行命令：CompileDaemon -command ="./go-curd" （./go -curd是项目目录）
 ```
 
 #### 1.3 安装Gin
