@@ -62,3 +62,42 @@ func PostsShow(c *gin.Context) {
 		"posts": post,
 	})
 }
+
+func PostUpdate(c *gin.Context) {
+	//从url中获取Id
+	id := c.Param("id")
+	//创建body结构体
+	var body struct {
+		Body  string
+		Title string
+	}
+	//Bind是用于将请求的参数绑定到一个结构体上的方法。具体来说，它可以将请求的参数解析并映射到一个结构体的字段上，然后将这个结构体作为请求处理函数的参数传入。
+	err := c.Bind(&body)
+	if err != nil {
+		log.Fatal("bind body failed")
+	}
+	///创建post结构体
+	var post models.Post
+	//DB.First(&post, id)是用于检索与给定id相符的第一个记录，并将结果存储在post变量中。
+	//它接受两个参数：第一个参数是指向变量的指针，第二个参数是要检索的记录的id
+	//如果找到记录，则将其读入post中，并返回nil作为错误；
+	//如果未找到记录，则将post设置为默认值（通常为0或nil），并返回ErrRecordNotFound作为错误。
+	initializers.DB.First(&post, id)
+	//更新
+	initializers.DB.Model(&post).Updates(models.Post{Title: body.Title, Body: body.Body})
+
+	c.JSON(200, gin.H{
+		"posts": post,
+	})
+}
+
+func PostDelete(c *gin.Context) {
+	//从url中获取Id
+	id := c.Param("id")
+	//删除
+	initializers.DB.Delete(&models.Post{}, id)
+	//返回
+	c.JSON(200, gin.H{
+		"message": "删除成功",
+	})
+}
