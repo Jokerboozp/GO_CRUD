@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go-curd/controllers"
 	"go-curd/initializers"
+	"go-curd/middleware"
 )
 
 func init() {
@@ -20,5 +21,6 @@ func main() {
 	r.DELETE("/posts/:id", controllers.PostDelete)
 	r.POST("/signup", controllers.SignUp)
 	r.POST("/login", controllers.Login)
+	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	r.Run()
 }

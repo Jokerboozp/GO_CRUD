@@ -59,10 +59,10 @@ PORT=3000
 - main方法中引入.env（方法参照godoenv的GitHub参考文件）。
 ```go
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+err := godotenv.Load()
+if err != nil {
+log.Fatal("Error loading .env file")
+}
 }
 ```
 
@@ -614,3 +614,106 @@ r.POST("/login", controllers.Login)
 - 测试结果：登录成功会返回token
 
 ![islO8a.png](https://i.328888.xyz/2023/04/25/islO8a.png)
+
+### 四、浏览器存储cookie
+
+#### 2.4.1 修改Login方法
+
+```go
+c.SetSameSite(http.SameSiteLaxMode)
+c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
+c.JSON(http.StatusOK, gin.H{})
+```
+
+#### 2.4.2 接口测试
+
+- 测试成功在postman中会显示cookie的值
+
+![ivbt9V.png](https://i.328888.xyz/2023/04/26/ivbt9V.png)
+
+### 五、设置cookie超时验证
+
+#### 2.5.1 编写requireAuth方法
+
+- 具体用法查看jwt页面`https://pkg.go.dev/github.com/golang-jwt/jwt/v4#example-Parse-Hmac`
+
+```go
+// 声明一个名为middleware的包 
+package middleware
+
+// 引入依赖包 
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
+	"go-curd/initializers"
+	"go-curd/models"
+	"net/http"
+	"os"
+	"time"
+)
+
+// 定义一个名为RequireAuth的中间件函数，接收一个类型为gin.Context的参数c
+func RequireAuth(c *gin.Context) {
+	// 从cookie中取出"Authorization"
+	cookie, err := c.Cookie("Authorization")
+	// 如果取不到则返回未授权状态
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	// 解析authorization token值
+	token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
+		// 确认签名算法是否正确
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		// hmacSampleSecret是[] byte类型，包含您的密钥，例如[]byte("my_secret_key")
+		return []byte(os.Getenv("SECRET")), nil
+	})
+
+	// 验证token
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		// 检查Token是否过期
+		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			// 过期状态返回未授权状态
+			c.AbortWithStatus(http.StatusUnauthorized)
+		}
+		// 从claims中获取用户ID
+		var user models.User
+		initializers.DB.First(&user, claims["sub"])
+		// 如果用户不存在则返回未授权状态
+		if user.ID == 0 {
+			c.AbortWithStatus(http.StatusUnauthorized)
+		}
+		// 将用户添加到请求中
+		c.Set("user", user)
+		c.Next()
+	} else {
+		// 验证失败则返回未授权状态
+		c.AbortWithStatus(http.StatusUnauthorized)
+	}
+}
+```
+
+#### 2.5.2 userController中编写Validate方法
+
+```go
+func Validate(c *gin.Context) {
+	user, _ := c.Get("user")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": user,
+	})
+}
+```
+
+#### 2.5.3 main.go中引入Validate方法和requireAuth方法
+
+```go
+r.GET("/validate", middleware.RequireAuth, controllers.Validate)
+```
+
+#### 2.5.4 接口测试
+
+- 测试结果正常为登录后存储token，删除token后调用validate接口提示错误401
